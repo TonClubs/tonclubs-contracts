@@ -32,7 +32,7 @@ const commonFiles = [
 
 (async () => {
   // initialize ton rpc client on testnet
-  const endpoint = await getHttpEndpoint({network: 'testnet'});
+  const endpoint = await getHttpEndpoint({network: 'mainnet'});
   const client = new TonClient({endpoint});
 
   // open wallet v4 (notice the correct wallet version here)
