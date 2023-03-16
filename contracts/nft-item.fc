@@ -144,3 +144,8 @@
   (int init?, int index, slice collection_address, _, slice owner_address, cell content) = load_data();
   return (init?, index, collection_address, owner_address, content);
 }
+
+(int)get_ttl() method_id {
+  (int init?, _, _, int ttl, _, _) = load_data();
+  return ttl;
+}
