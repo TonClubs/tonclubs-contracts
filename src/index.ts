@@ -4,8 +4,6 @@ import {mnemonicToWalletKey} from 'ton-crypto';
 import {TonClient, Cell, WalletContractV4, Address} from 'ton';
 import {compileFunc} from '@ton-community/func-js';
 import NFTCollection from './NFTCollection';
-import dotenv from "dotenv";
-dotenv.config({ path: "../.env" });
 
 const ACTION: 'deploy' | 'mint' = 'mint' as any;
 
@@ -30,17 +28,18 @@ const commonFiles = [
   },
 ];
 
-(async () => {
+(async (): Promise<void> => {
   // initialize ton rpc client on testnet
   const endpoint = await getHttpEndpoint({network: 'mainnet'});
   const client = new TonClient({endpoint});
 
   // open wallet v4 (notice the correct wallet version here)
-  const mnemonic = process.env.MNEMONIC!;
+  const mnemonic = process.env.MNEMONIC || '';
   const key = await mnemonicToWalletKey(mnemonic.split(' '));
   const wallet = WalletContractV4.create({publicKey: key.publicKey, workchain: 0});
   if (!(await client.isContractDeployed(wallet.address))) {
-    return console.log('wallet is not deployed');
+    console.log('wallet is not deployed');
+    return;
   }
 
   // open wallet and read the current seqno of the wallet
@@ -89,7 +88,8 @@ const commonFiles = [
     // exit if contract is already deployed
     console.log('contract address:', collection.address.toString());
     if (await client.isContractDeployed(collection.address)) {
-      return console.log('Collection already deployed');
+      console.log('Collection already deployed');
+      return;
     }
 
     // send the deploy transaction
@@ -99,7 +99,7 @@ const commonFiles = [
   }
 
   if (ACTION === 'mint') {
-    const collectionAddress = Address.parse(process.env.DEPLOYED_NFT_CONTRACT_ADDRESS!);
+    const collectionAddress = Address.parse(process.env.DEPLOYED_NFT_CONTRACT_ADDRESS || '');
     const collection = new NFTCollection(collectionAddress);
     const collectionContract = client.open(collection);
 
@@ -119,6 +119,4 @@ const commonFiles = [
   }
 
   console.log('transaction confirmed!');
-
-  return false;
 })();

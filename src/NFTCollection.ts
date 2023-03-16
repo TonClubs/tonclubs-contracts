@@ -9,8 +9,7 @@ import {
   SendMode,
   BitString,
   BitBuilder,
-} from "ton-core";
-
+} from 'ton-core';
 
 const getBitStringFromUrl = (url: string): BitString => {
   const buffer = Buffer.from(new TextEncoder().encode(encodeURI(url)).buffer);
@@ -21,9 +20,7 @@ const getCollectionContentCell = (): Cell => {
   const collectionContentBuilder = new BitBuilder();
   collectionContentBuilder.writeUint(0x01, 8);
   collectionContentBuilder.writeBits(
-    getBitStringFromUrl(
-      'https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/',
-    ),
+    getBitStringFromUrl('https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/'),
   );
 
   return new Cell({bits: collectionContentBuilder.build()});
@@ -32,9 +29,7 @@ const getCollectionContentCell = (): Cell => {
 const getCommonContentCell = (): Cell => {
   const collectionContentBuilder = new BitBuilder();
   collectionContentBuilder.writeBits(
-    getBitStringFromUrl(
-      'https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/',
-    ),
+    getBitStringFromUrl('https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/'),
   );
 
   return new Cell({bits: collectionContentBuilder.build()});
