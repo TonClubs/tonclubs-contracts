@@ -8,7 +8,6 @@ import {
   beginCell,
   SendMode,
   BitString,
-  BitBuilder,
 } from 'ton-core';
 
 const getBitStringFromUrl = (url: string): BitString => {
@@ -17,22 +16,20 @@ const getBitStringFromUrl = (url: string): BitString => {
 };
 
 const getCollectionContentCell = (): Cell => {
-  const collectionContentBuilder = new BitBuilder();
-  collectionContentBuilder.writeUint(0x01, 8);
-  collectionContentBuilder.writeBits(
-    getBitStringFromUrl('https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/'),
-  );
-
-  return new Cell({bits: collectionContentBuilder.build()});
+  return beginCell()
+    .storeUint(0x01, 8)
+    .storeBits(
+      getBitStringFromUrl('https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/'),
+    )
+    .endCell();
 };
 
 const getCommonContentCell = (): Cell => {
-  const collectionContentBuilder = new BitBuilder();
-  collectionContentBuilder.writeBits(
-    getBitStringFromUrl('https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/'),
-  );
-
-  return new Cell({bits: collectionContentBuilder.build()});
+  return beginCell()
+    .storeBits(
+      getBitStringFromUrl('https://ipfs.io/ipfs/QmeSjSinHpPnmXmspMjwiXyN6zS4E9zccariGR3jxcaWtq/'),
+    )
+    .endCell();
 };
 
 export default class Counter implements Contract {
@@ -80,11 +77,7 @@ export default class Counter implements Contract {
 
   // eslint-disable-next-line class-methods-use-this
   public async sendMint(provider: ContractProvider, via: Sender, owner: Address): Promise<void> {
-    const nftUriContentBuilder = new BitBuilder();
-    nftUriContentBuilder.writeBits(getBitStringFromUrl('0'));
-
-    const nftUriCell = new Cell({bits: nftUriContentBuilder.build()});
-
+    const nftUriCell = beginCell().storeBits(getBitStringFromUrl('')).endCell();
     const nftItemContentCell = beginCell().storeAddress(owner).storeRef(nftUriCell).endCell();
 
     const data = beginCell()
