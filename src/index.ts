@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import fs from 'node:fs';
 import {getHttpEndpoint} from '@orbs-network/ton-access';
 import {mnemonicToWalletKey} from 'ton-crypto';
 import {TonClient, Cell, WalletContractV4, Address} from 'ton';
