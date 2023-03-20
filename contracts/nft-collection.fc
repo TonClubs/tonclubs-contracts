@@ -46,8 +46,8 @@ slice calculate_nft_item_address(int wc, cell state_init) {
                      .begin_parse();
 }
 
-() deploy_nft_item(slice owner_address,int item_index, cell nft_item_code, int price, int msg_value, int amount, cell nft_content) impure {
-  throw_unless(450, msg_value >= price ); ;; it could be price + min_gas_amount()
+() deploy_nft_item(slice owner_address, int item_index, cell nft_item_code, int price, int msg_value, int amount, cell nft_content) impure {
+  throw_unless(450, msg_value >= min_tons_for_storage() + price ); ;; it could be price + min_gas_amount()
   cell state_init = calculate_nft_item_state_init(item_index, nft_item_code);
   slice nft_address = calculate_nft_item_address(workchain(), state_init);
 
@@ -82,7 +82,7 @@ slice calculate_nft_item_address(int wc, cell state_init) {
   send_raw_message(msg.end_cell(), 64); ;; carry all the remaining value of the inbound message
 }
 
-() recv_internal(int msg_value,cell in_msg_full, slice in_msg_body) impure {
+() recv_internal(int msg_value, cell in_msg_full, slice in_msg_body) impure {
     if (in_msg_body.slice_empty?()) { ;; ignore empty messages
         return ();
     }
@@ -110,10 +110,10 @@ slice calculate_nft_item_address(int wc, cell state_init) {
       ;; check if the limit is reached
       throw_unless(402, next_item_index < limit);
 
-      cell nft_content_replace = begin_cell().store_slice(sender_address).store_ref(begin_cell().store_slice("").end_cell()).end_cell();
+      slice nft_item_owner = in_msg_body~load_ref().load_slice();
+      cell nft_content_replace = begin_cell().store_slice(nft_item_owner).store_ref(begin_cell().store_slice("").end_cell()).end_cell();
 
-
-      deploy_nft_item(owner_address ,next_item_index, nft_item_code, price, msg_value, in_msg_body~load_coins(), nft_content_replace);
+      deploy_nft_item(owner_address, next_item_index, nft_item_code, price, msg_value, in_msg_body~load_coins(), nft_content_replace);
       next_item_index += 1;
 
       save_data(owner_address, next_item_index, limit, price, content, nft_item_code, royalty_params);
