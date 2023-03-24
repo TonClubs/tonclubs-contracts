@@ -105,13 +105,12 @@ slice calculate_nft_item_address(int wc, cell state_init) {
     }
     
   
-    if (op == 1) { ;; deploy new nft
+    if (op == 1) { ;; mint new nft
 
       ;; check if the limit is reached
       throw_unless(402, next_item_index < limit);
 
-      slice nft_item_owner = in_msg_body~load_ref().load_slice();
-      cell nft_content_replace = begin_cell().store_slice(nft_item_owner).store_ref(begin_cell().store_slice("").end_cell()).end_cell();
+      cell nft_content_replace = begin_cell().store_slice(sender_address).store_ref(begin_cell().store_slice("").end_cell()).end_cell();
 
       deploy_nft_item(owner_address, next_item_index, nft_item_code, price, msg_value, in_msg_body~load_coins(), nft_content_replace);
       next_item_index += 1;
