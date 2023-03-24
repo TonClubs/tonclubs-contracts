@@ -1,23 +1,21 @@
 import {getHttpEndpoint} from '@orbs-network/ton-access';
 import {TonClient, Cell, Address} from 'ton';
+import NFTCollection from './NFTCollection';
 import {compile} from '../compile';
 import {getWallet} from './Utils/Wallet';
-import NFTCollection from './NFTCollection';
 import {waitUntil} from './Utils/Helpers';
-
-const ACTION: 'deploy' | 'mint' = 'mint' as any;
+import {MNEMONIC, argv} from './Utils/Constants';
 
 (async (): Promise<void> => {
   // initialize ton rpc client on testnet
-  const endpoint = await getHttpEndpoint({network: 'mainnet'});
+  const endpoint = await getHttpEndpoint({network: 'testnet'});
   const client = new TonClient({endpoint});
 
-  const mnemonic = process.env.MNEMONIC || '';
-  const {wallet, walletContract, walletSender} = await getWallet(client, mnemonic.split(' '));
+  const {wallet, walletContract, walletSender} = await getWallet(client, MNEMONIC.split(' '));
 
   const seqno = await walletContract.getSeqno();
 
-  if (ACTION === 'deploy') {
+  if (argv.deploy === true) {
     const {collectionCode: collectionCodeStr, itemCode: itemCodeStr} = await compile();
 
     // prepare Collection's initial code and data cells for deployment
@@ -38,7 +36,7 @@ const ACTION: 'deploy' | 'mint' = 'mint' as any;
     await collectionContract.sendDeploy(walletSender);
   }
 
-  if (ACTION === 'mint') {
+  if (argv.mint === true) {
     const collectionAddress = Address.parse(process.env.DEPLOYED_NFT_CONTRACT_ADDRESS || '');
     const collection = new NFTCollection(collectionAddress);
     const collectionContract = client.open(collection);
