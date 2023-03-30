@@ -5,6 +5,8 @@
   "version": "1.0.0",
   "scripts": {
     "start": "ts-node ./index.ts",
+    "mint": "yarn start --mint",
+    "deploy": "yarn start --deploy",
     "watch": "nodemon ./index.ts",
     "test": "jest ./tests --passWithNoTests",
     "format:check": "prettier -c \"src/**/*.ts\"",
@@ -21,7 +23,8 @@
     "ton": "^13.3.0",
     "ton-contract-executor": "^0.7.0",
     "ton-core": "^0.48.0",
-    "ton-crypto": "^3.2.0"
+    "ton-crypto": "^3.2.0",
+    "yargs-parser": "^21.1.1"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.16.11",

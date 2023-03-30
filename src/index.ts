@@ -1,122 +1,53 @@
-import fs from 'node:fs';
 import {getHttpEndpoint} from '@orbs-network/ton-access';
-import {mnemonicToWalletKey} from 'ton-crypto';
-import {TonClient, Cell, WalletContractV4, Address} from 'ton';
-import {compileFunc} from '@ton-community/func-js';
+import {TonClient, Cell, Address} from 'ton';
 import NFTCollection from './NFTCollection';
-
-const ACTION: 'deploy' | 'mint' = 'mint' as any;
-
-const sleep = (ms: number): Promise<void> => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-};
-
-const commonFiles = [
-  {
-    filename: 'stdlib.fc',
-    content: fs.readFileSync('./contracts/stdlib.fc', {encoding: 'utf-8'}),
-  },
-  {
-    filename: 'params.fc',
-    content: fs.readFileSync('./contracts/params.fc', {encoding: 'utf-8'}),
-  },
-  {
-    filename: 'op-codes.fc',
-    content: fs.readFileSync('./contracts/op-codes.fc', {encoding: 'utf-8'}),
-  },
-];
+import {compile} from '../compile';
+import {getWallet} from './Utils/Wallet';
+import {waitUntil} from './Utils/Helpers';
+import {MNEMONIC, argv} from './Utils/Constants';
 
 (async (): Promise<void> => {
   // initialize ton rpc client on testnet
-  const endpoint = await getHttpEndpoint({network: 'mainnet'});
+  const endpoint = await getHttpEndpoint({network: 'testnet'});
   const client = new TonClient({endpoint});
 
-  // open wallet v4 (notice the correct wallet version here)
-  const mnemonic = process.env.MNEMONIC || '';
-  const key = await mnemonicToWalletKey(mnemonic.split(' '));
-  const wallet = WalletContractV4.create({publicKey: key.publicKey, workchain: 0});
-  if (!(await client.isContractDeployed(wallet.address))) {
-    console.log('wallet is not deployed');
-    return;
-  }
+  const {wallet, walletContract, walletSender} = await getWallet(client, MNEMONIC.split(' '));
 
-  // open wallet and read the current seqno of the wallet
-  const walletContract = client.open(wallet);
-  const walletSender = walletContract.sender(key.secretKey);
   const seqno = await walletContract.getSeqno();
 
-  if (ACTION === 'deploy') {
-    const collectionCodeRes = await compileFunc({
-      sources: [
-        ...commonFiles,
-
-        {
-          filename: 'nft-collection.fc',
-          content: fs.readFileSync('./contracts/nft-collection.fc', {encoding: 'utf-8'}),
-        },
-      ],
-    });
-
-    const itemCodeRes = await compileFunc({
-      sources: [
-        ...commonFiles,
-
-        {
-          filename: 'nft-item.fc',
-          content: fs.readFileSync('./contracts/nft-item.fc', {encoding: 'utf-8'}),
-        },
-      ],
-    });
-
-    if (collectionCodeRes.status === 'error') {
-      console.error(collectionCodeRes.message);
-      process.exit(1);
-    }
-
-    if (itemCodeRes.status === 'error') {
-      console.error(itemCodeRes.message);
-      process.exit(1);
-    }
+  if (argv.deploy === true) {
+    const {collectionCode: collectionCodeStr, itemCode: itemCodeStr} = await compile();
 
     // prepare Collection's initial code and data cells for deployment
-    const collectionCode = Cell.fromBoc(Buffer.from(collectionCodeRes.codeBoc, 'base64'))[0]; // compilation output from step 6
-    const itemCode = Cell.fromBoc(Buffer.from(itemCodeRes.codeBoc, 'base64'))[0]; // compilation output from step 6
+    const collectionCode = Cell.fromBoc(Buffer.from(collectionCodeStr, 'base64'))[0];
+    const itemCode = Cell.fromBoc(Buffer.from(itemCodeStr, 'base64'))[0];
     const collection = NFTCollection.createForDeploy(collectionCode, wallet.address, itemCode);
 
     // exit if contract is already deployed
     console.log('contract address:', collection.address.toString());
     if (await client.isContractDeployed(collection.address)) {
-      console.log('Collection already deployed');
+      console.error('Collection already deployed');
       return;
     }
 
-    // send the deploy transaction
     const collectionContract = client.open(collection);
 
+    // send the deploy transaction
     await collectionContract.sendDeploy(walletSender);
   }
 
-  if (ACTION === 'mint') {
+  if (argv.mint === true) {
     const collectionAddress = Address.parse(process.env.DEPLOYED_NFT_CONTRACT_ADDRESS || '');
     const collection = new NFTCollection(collectionAddress);
     const collectionContract = client.open(collection);
 
+    // Send the mint transaction
     await collectionContract.sendMint(walletSender, wallet.address);
   }
 
-  // wait until confirmed
-  let currentSeqno = seqno;
-  while (currentSeqno === seqno) {
-    console.log('waiting for transaction to confirm...');
+  console.log('waiting for transaction to confirm...');
 
-    // eslint-disable-next-line no-await-in-loop
-    await sleep(1500);
-
-    // eslint-disable-next-line no-await-in-loop
-    currentSeqno = await walletContract.getSeqno();
-  }
+  await waitUntil(async () => seqno !== (await walletContract.getSeqno()), 1500);
 
   console.log('transaction confirmed!');
 })();

@@ -2,7 +2,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {compileFunc} from '@ton-community/func-js';
 
-(async (): Promise<void> => {
+export const compile = async (): Promise<{
+  collectionCode: string;
+  itemCode: string;
+}> => {
   const commonFiles = [
     {
       filename: 'stdlib.fc',
@@ -58,4 +61,11 @@ import {compileFunc} from '@ton-community/func-js';
   await fs.writeFile(path.join(distFolder, 'nft-item.boc'), itemCodeRes.codeBoc, {
     encoding: 'base64',
   });
-})();
+
+  return {
+    collectionCode: collectionCodeRes.codeBoc,
+    itemCode: itemCodeRes.codeBoc,
+  };
+};
+
+compile();
